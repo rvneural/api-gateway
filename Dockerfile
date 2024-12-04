@@ -4,5 +4,6 @@ RUN apt-get update && apt-get upgrade
 RUN apt-get install -y ca-certificates
 EXPOSE 8000
 COPY . .
+WORKDIR /build/linux
 CMD [ "./api-gateway" ]
 
