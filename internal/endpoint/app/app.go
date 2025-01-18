@@ -1,12 +1,16 @@
 package app
 
 import (
+	"crypto/tls"
 	"log"
+	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/acme"
+	"golang.org/x/crypto/acme/autocert"
 )
 
 type Endpoint struct {
@@ -57,7 +61,24 @@ func (e *Endpoint) AddStaticEndpoint(pattern string, path string) {
 }
 
 func (e *Endpoint) Start() {
-	e.router.Run(":8000")
+
+	DOMAIN := "neuron-nexus.ru"
+	m := &autocert.Manager{
+		Cache:      autocert.DirCache("../../var2/www/.cache"),
+		Prompt:     autocert.AcceptTOS,
+		HostPolicy: autocert.HostWhitelist(DOMAIN, "www."+DOMAIN, "doc."+DOMAIN, "docs."+DOMAIN),
+		Email:      "info@realnoevremya.ru",
+	}
+	tlsServer := &http.Server{
+		Addr: ":8000",
+		TLSConfig: &tls.Config{
+			GetCertificate: m.GetCertificate,
+			NextProtos:     []string{acme.ALPNProto},
+		},
+		Handler: e.router,
+	}
+
+	log.Fatal(tlsServer.ListenAndServeTLS("", ""))
 }
 
 func (e *Endpoint) createReverseProxy(targetURL string) func(*gin.Context) {
